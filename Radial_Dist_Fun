@@ -1,0 +1,85 @@
+function [binranges, Nbincounts]=Radial_Dist_Fun(cnt, dim, plots,binsize,maxbin)
+% Usage: [binranges, Nbincounts]=Radial_Dist_Fun(cnt, dim, plots,1,50)
+% Input: Default usage - Radial_Dist_Fun(cnt,1)
+% cnt - contains the x,y coordinates of points in the first two rows
+% dim - dimensions of window in pixels
+% plots - if 1, will plot lots of intermediate graphs
+% binsize - how large each bin will be (pixels)
+% maxbin - what distance do we explore up to?
+% Output:
+% binranges - The set of bins values are put into. Usually linear
+% Nbincounts - values in each bin (normalized)
+sz = length (cnt);
+dist = zeros(sz); %create preloop
+%binsize = 5;
+%maxbin = 200;
+
+cnt (:,3:end) = []; %get rid of superflous data, to run faster
+
+for i = 1:sz
+%for i = 1:10
+    temppeak= cnt(i,:); %get the specific point
+    x1 = bsxfun(@minus,cnt,temppeak); %subtract the coordinates from the matrix of point coordinates
+    x1 = x1.*x1;   %square the values
+    dist(:,i) = sqrt (x1 (:,1) + x1 (:,2)); %find distance
+end
+
+binranges = 0:binsize:maxbin; %the set of bins (can be non-linear)
+[bincounts] = histc(dist,binranges); %this is the number of points in each bin
+bincounts = sum (bincounts,2); %sum all distributions of points
+
+% Now Normalize for size of area/radius
+Nbincounts =zeros (1,numel(bincounts)); %create pre-loop
+for i = 1:numel(bincounts)
+    rin = binsize*(i-0.5); %inner radius of shell
+    rout = binsize*(i+0.5); %outer radius of shell
+    Vshell = (4/3)*pi*(rout^3 - rin^3); %volume of shell
+    Nbincounts(i)= bincounts(i) * (dim(1)*dim(2)/sz) * (1/Vshell); %copied off Dan Magagnosc
+end
+
+Nbincounts (1) = 0;
+
+
+%% For 3D, not yet working.
+
+% out (:,3) = out(:,3)*9;
+% sz = length (out);
+% dist = zeros(sz); %create preloop
+% binsize = 2;
+% maxbin = 50;
+% dim = [1500,1500,1500]; %arbitrarily set
+% 
+% cnt = out;
+% cnt (:,4:end) = []; %get rid of superflous data, to run faster
+% 
+% for i = 1:sz
+% %for i = 1:10
+%     temppeak= cnt(i,:); %get the specific point
+%     x1 = bsxfun(@minus,cnt,temppeak); %subtract the coordinates from the matrix of point coordinates
+%     x1 = x1.*x1;   %square the values
+%     dist(:,i) = sqrt (x1 (:,1) + x1 (:,2) + x1 (:,2)); %find distance
+% end
+% 
+% binranges = 0:binsize:maxbin; %the set of bins (can be non-linear)
+% [bincounts] = histc(dist,binranges); %this is the number of points in each bin
+% bincounts = sum (bincounts,2); %sum all distributions of points
+% 
+% % Now Normalize for size of area/radius
+% Nbincounts =zeros (1,numel(bincounts)); %create pre-loop
+% for i = 1:numel(bincounts)
+%     rin = binsize*(i-0.5); %inner radius of shell
+%     rout = binsize*(i+0.5); %outer radius of shell
+%    %Vshell = 4* pi * i*i *binsize*binsize * (rout-rin);
+%     Vshell = 2*pi *binsize*i*(rout-rin);
+%     %Vshell = (4/3)*pi*(rout^3 - rin^3); %volume of shell
+%     Nbincounts(i)= bincounts(i) * (dim(1)*dim(2)*dim(3)/sz/sz) * (1/Vshell); %copied off Dan Magagnosc
+% end
+
+%%
+if plots == 1
+figure (3)
+bar(binranges,Nbincounts,'histc')
+title ('Radial Distribution Function')
+xlabel ('pixels from center')
+ylabel ('Normalized frequency')
+end
